@@ -1,0 +1,91 @@
+# .NET build output directories
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.dbmdl
+*.jfm
+*.sln.docstates
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Local settings files
+appsettings.Development.json
+appsettings.Local.json
+*.Development.json
+*.Local.json
+
+# IDE - Visual Studio
+.vs/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates
+*.jfm
+*.user
+
+# Entity Framework Core
+Migrations/*
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Docker build files
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Exclude machine-specific settings
+launchSettings.json
+
+# JetBrains Rider
+.idea/
+*.sln.iml
