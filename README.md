@@ -1,6 +1,6 @@
 # Merit Journal Application
+Merit Journal is a web application designed for Buddhist practitioners. It offers a private space to document Dhamma practice, including meditation sessions, sutta study, dāna (generosity), sīla (virtuous conduct), and bhāvanā (mental development). This personal digital record helps users cultivate wholesome states and observe their spiritual progress.
 
-Merit Journal is a full-stack application for recording and managing meritorious acts or significant things done on a particular day. It provides a secure environment for users to create, view, edit, and delete journal entries, with support for formatted text, images, and tags.
 
 ## Features
 
