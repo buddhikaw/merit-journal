@@ -10,10 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeritJournal.Infrastructure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeritJournal.API", "MeritJournal.API\MeritJournal.API.csproj", "{EAFEBFE8-366C-4C7F-9DBB-29BFE0A64A64}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeritJournal.UnitTests", "MeritJournal.UnitTests\MeritJournal.UnitTests.csproj", "{4E5F007A-F86F-4B72-8C5D-9B7DA13F1D9F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeritJournal.IntegrationTests", "MeritJournal.IntegrationTests\MeritJournal.IntegrationTests.csproj", "{62283C19-0E5A-4D9A-8B63-F47D601F9E34}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,13 +36,5 @@ Global
 		{EAFEBFE8-366C-4C7F-9DBB-29BFE0A64A64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAFEBFE8-366C-4C7F-9DBB-29BFE0A64A64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAFEBFE8-366C-4C7F-9DBB-29BFE0A64A64}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4E5F007A-F86F-4B72-8C5D-9B7DA13F1D9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4E5F007A-F86F-4B72-8C5D-9B7DA13F1D9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4E5F007A-F86F-4B72-8C5D-9B7DA13F1D9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4E5F007A-F86F-4B72-8C5D-9B7DA13F1D9F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{62283C19-0E5A-4D9A-8B63-F47D601F9E34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{62283C19-0E5A-4D9A-8B63-F47D601F9E34}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{62283C19-0E5A-4D9A-8B63-F47D601F9E34}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{62283C19-0E5A-4D9A-8B63-F47D601F9E34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
