@@ -61,3 +61,6 @@ app.MapGet("/", () => "Merit Journal API")
 app.MapJournalEntryEndpoints();
 
 app.Run();
+
+// Making Program class public for testing purposes
+public partial class Program { }
