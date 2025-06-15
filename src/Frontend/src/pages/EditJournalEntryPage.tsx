@@ -21,7 +21,7 @@ import {
   selectJournalLoading 
 } from '../features/journal/journalSlice';
 import { AppDispatch } from '../app/store';
-import { JournalEntry, Tag } from '../types/journal';
+import { JournalEntry } from '../types/journal';
 
 const EditJournalEntryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,8 +32,7 @@ const EditJournalEntryPage: React.FC = () => {
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [entryDate, setEntryDate] = useState<string>('');
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [entryDate, setEntryDate] = useState<string>('');  const [tags, setTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
   
   useEffect(() => {
@@ -46,20 +45,9 @@ const EditJournalEntryPage: React.FC = () => {
       setTitle(entry.title || '');
       setContent(entry.content || '');
       setEntryDate(entry.entryDate || '');
-      
-      // Convert string tags to Tag objects if needed
-      if (entry.tags) {
-        const tagObjects = Array.isArray(entry.tags) 
-          ? entry.tags.map(tag => {
-              // Handle both string tags and Tag objects
-              if (typeof tag === 'string') {
-                return { id: 0, name: tag };
-              } else {
-                return tag;
-              }
-            })
-          : [];
-        setTags(tagObjects);
+        // Set tags from entry
+      if (entry.tags && Array.isArray(entry.tags)) {
+        setTags(entry.tags);
       } else {
         setTags([]);
       }
@@ -83,12 +71,11 @@ const EditJournalEntryPage: React.FC = () => {
     e.preventDefault();
     
     if (!id || !title || !content || !entryDate) return;
-    
-    // Filter out any empty tag names and ensure we have unique tags
+      // Filter out any empty tag names and ensure we have unique tags
     const validTags = tags
-      .map(tag => tag.name.trim())
-      .filter(tagName => tagName !== '')
-      .filter((tagName, index, self) => self.indexOf(tagName) === index);
+      .map(tag => tag.trim())
+      .filter(tag => tag !== '')
+      .filter((tag, index, self) => self.indexOf(tag) === index);
     
     const entryData = {
       title,
@@ -113,14 +100,13 @@ const EditJournalEntryPage: React.FC = () => {
   const handleBack = () => {
     navigate(`/entries/${id}`);
   };
-
   const handleTagDelete = (tagToDelete: string) => {
-    setTags(tags.filter(tag => tag.name !== tagToDelete));
+    setTags(tags.filter(tag => tag !== tagToDelete));
   };
 
   const handleTagAdd = () => {
-    if (newTagName && !tags.some(tag => tag.name === newTagName)) {
-      setTags([...tags, { id: 0, name: newTagName }]);
+    if (newTagName && !tags.includes(newTagName)) {
+      setTags([...tags, newTagName]);
       setNewTagName('');
     }
   };
@@ -199,18 +185,17 @@ const EditJournalEntryPage: React.FC = () => {
                   <Button 
                     variant="contained"
                     onClick={handleTagAdd}
-                    disabled={!newTagName || tags.some(tag => tag.name === newTagName)}
+                    disabled={!newTagName || tags.includes(newTagName)}
                   >
                     Add
                   </Button>
                 </Box>
                 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {tags.map(tag => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>                  {tags.map((tag, index) => (
                     <Chip
-                      key={tag.id || tag.name}
-                      label={tag.name}
-                      onDelete={() => handleTagDelete(tag.name)}
+                      key={`tag-${index}`}
+                      label={tag}
+                      onDelete={() => handleTagDelete(tag)}
                     />
                   ))}
                 </Box>

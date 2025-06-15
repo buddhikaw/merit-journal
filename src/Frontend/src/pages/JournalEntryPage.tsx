@@ -111,14 +111,12 @@ const JournalEntryPage: React.FC = () => {
         
         <Box sx={{ mt: 4, whiteSpace: 'pre-wrap' }}>
           {entry.content}
-        </Box>
-        
-        {entry.tags && entry.tags.length > 0 && (
+        </Box>        {entry.tags && entry.tags.length > 0 && (
           <Box sx={{ mt: 4 }}>
-            {entry.tags.map((tag) => (
+            {entry.tags.map((tag, index) => (
               <Chip 
-                key={tag.id} 
-                label={tag.name} 
+                key={`tag-${index}`} 
+                label={tag} 
                 sx={{ mr: 1, mb: 1 }} 
               />
             ))}

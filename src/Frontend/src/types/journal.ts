@@ -24,7 +24,7 @@ export interface JournalEntry {
   createdAt: string;
   updatedAt: string;
   images: JournalImage[];
-  tags: Tag[];
+  tags: string[];
 }
 
 /**
