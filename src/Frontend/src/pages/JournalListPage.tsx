@@ -11,7 +11,8 @@ import {
   Box,
   Grid,
   Chip,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { selectAllJournalEntries, selectJournalLoading, fetchJournalEntries } from '../features/journal/journalSlice';
@@ -63,14 +64,22 @@ const JournalListPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           Merit Journal Entries
         </Typography>
-        <Button
-          variant="contained"
+        <IconButton
           color="primary"
-          startIcon={<AddIcon />}
+          aria-label="add new journal entry"
           onClick={handleCreateEntry}
+          sx={{
+            backgroundColor: (theme) => theme.palette.primary.main,
+            color: 'white',
+            width: 48,
+            height: 48,
+            '&:hover': {
+              backgroundColor: (theme) => theme.palette.primary.dark,
+            }
+          }}
         >
-          New Entry
-        </Button>
+          <AddIcon />
+        </IconButton>
       </Box>
 
       {entries.length === 0 ? (
@@ -78,15 +87,23 @@ const JournalListPage: React.FC = () => {
           <Typography variant="h6" color="textSecondary" gutterBottom>
             You don't have any journal entries yet.
           </Typography>
-          <Button
-            variant="outlined"
+          <IconButton
             color="primary"
-            startIcon={<AddIcon />}
+            aria-label="create your first entry"
             onClick={handleCreateEntry}
-            sx={{ mt: 2 }}
+            sx={{
+              backgroundColor: (theme) => theme.palette.primary.main,
+              color: 'white',
+              width: 48,
+              height: 48,
+              mt: 2,
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.primary.dark,
+              }
+            }}
           >
-            Create Your First Entry
-          </Button>
+            <AddIcon />
+          </IconButton>
         </Box>
       ) : (
         sortedDates.map(date => (
