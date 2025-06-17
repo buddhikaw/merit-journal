@@ -1,4 +1,5 @@
 using System.Reflection;
+using MeritJournal.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MeritJournal.Application;

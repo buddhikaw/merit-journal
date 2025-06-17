@@ -1,34 +1,39 @@
+// This interface is being deprecated in favor of using IRepository<T> and IUnitOfWork.
+// It's kept here temporarily for backward compatibility while refactoring.
+// Once refactoring is complete, this interface can be removed.
+
 using MeritJournal.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace MeritJournal.Application.Interfaces;
 
 /// <summary>
+/// @Deprecated: Use IUnitOfWork and IRepository<T> interfaces instead.
 /// Interface for the application's database context.
 /// </summary>
 public interface IApplicationDbContext
 {
     /// <summary>
-    /// DbSet for JournalEntry entities.
+    /// @Deprecated: Use IUnitOfWork.JournalEntries repository instead.
     /// </summary>
-    DbSet<JournalEntry> JournalEntries { get; }
+    IQueryable<JournalEntry> JournalEntries { get; }
     
     /// <summary>
-    /// DbSet for JournalImage entities.
+    /// @Deprecated: Use IUnitOfWork.JournalImages repository instead.
     /// </summary>
-    DbSet<JournalImage> JournalImages { get; }
+    IQueryable<JournalImage> JournalImages { get; }
     
     /// <summary>
-    /// DbSet for Tag entities.
+    /// @Deprecated: Use IUnitOfWork.Tags repository instead.
     /// </summary>
-    DbSet<Tag> Tags { get; }
+    IQueryable<Tag> Tags { get; }
     
     /// <summary>
-    /// DbSet for JournalEntryTag entities.
+    /// @Deprecated: Use IUnitOfWork.JournalEntryTags repository instead.
     /// </summary>
-    DbSet<JournalEntryTag> JournalEntryTags { get; }
+    IQueryable<JournalEntryTag> JournalEntryTags { get; }
     
     /// <summary>
+    /// @Deprecated: Use IUnitOfWork.SaveChangesAsync() instead.
     /// Saves all changes made to the database.
     /// </summary>
     /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>

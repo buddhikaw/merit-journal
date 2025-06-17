@@ -1,4 +1,3 @@
-using MeritJournal.Application.Interfaces;
 using MeritJournal.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +6,7 @@ namespace MeritJournal.Infrastructure.Persistence;
 /// <summary>
 /// Implementation of the application's database context.
 /// </summary>
-public class ApplicationDbContext : DbContext, IApplicationDbContext
+public class ApplicationDbContext : DbContext
 {
     /// <summary>
     /// Constructor for the ApplicationDbContext.
@@ -34,8 +33,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     
     /// <summary>
     /// DbSet for JournalEntryTag entities.
-    /// </summary>
-    public DbSet<JournalEntryTag> JournalEntryTags => Set<JournalEntryTag>();
+    /// </summary>    public DbSet<JournalEntryTag> JournalEntryTags => Set<JournalEntryTag>();
 
     /// <summary>
     /// Configures the model that was discovered by convention from the entity types.

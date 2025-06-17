@@ -1,6 +1,5 @@
 using MediatR;
 using MeritJournal.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace MeritJournal.Application.Features.JournalEntries.Commands;
 
@@ -36,15 +35,15 @@ public class DeleteJournalEntryCommand : IRequest
 /// </summary>
 public class DeleteJournalEntryCommandHandler : IRequestHandler<DeleteJournalEntryCommand>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteJournalEntryCommandHandler"/> class.
     /// </summary>
-    /// <param name="context">The application DB context.</param>
-    public DeleteJournalEntryCommandHandler(IApplicationDbContext context)
+    /// <param name="unitOfWork">The unit of work.</param>
+    public DeleteJournalEntryCommandHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
     
     /// <summary>
@@ -55,15 +54,51 @@ public class DeleteJournalEntryCommandHandler : IRequestHandler<DeleteJournalEnt
     /// <returns>Task representing the asynchronous operation.</returns>
     public async Task Handle(DeleteJournalEntryCommand request, CancellationToken cancellationToken)
     {
-        var journalEntry = await _context.JournalEntries
-            .FirstOrDefaultAsync(je => je.Id == request.JournalEntryId && je.UserId == request.UserId, cancellationToken);
+        // Begin transaction
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
         
-        if (journalEntry == null)
+        try
         {
-            throw new KeyNotFoundException($"Journal entry with ID {request.JournalEntryId} not found for user {request.UserId}");
+            // Get the journal entry
+            var journalEntry = await _unitOfWork.JournalEntries
+                .FirstOrDefaultAsync(je => je.Id == request.JournalEntryId && je.UserId == request.UserId);
+            
+            if (journalEntry == null)
+            {
+                throw new KeyNotFoundException($"Journal entry with ID {request.JournalEntryId} not found for user {request.UserId}");
+            }
+            
+            // Get related data to clean up
+            var journalEntryTags = _unitOfWork.JournalEntryTags
+                .Find(jet => jet.JournalEntryId == request.JournalEntryId)
+                .ToList();
+                
+            var journalImages = _unitOfWork.JournalImages
+                .Find(ji => ji.JournalEntryId == request.JournalEntryId)
+                .ToList();
+                
+            // Remove related data first
+            foreach (var tag in journalEntryTags)
+            {
+                _unitOfWork.JournalEntryTags.Remove(tag);
+            }
+            
+            foreach (var image in journalImages)
+            {
+                _unitOfWork.JournalImages.Remove(image);
+            }
+            
+            // Remove the journal entry
+            _unitOfWork.JournalEntries.Remove(journalEntry);
+            
+            // Save changes and commit transaction
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitTransactionAsync(cancellationToken);
         }
-        
-        _context.JournalEntries.Remove(journalEntry);
-        await _context.SaveChangesAsync(cancellationToken);
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            throw;
+        }
     }
 }

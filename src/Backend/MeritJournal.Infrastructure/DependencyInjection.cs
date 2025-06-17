@@ -1,5 +1,7 @@
 using MeritJournal.Application.Interfaces;
+using MeritJournal.Domain.Entities;
 using MeritJournal.Infrastructure.Persistence;
+using MeritJournal.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +26,8 @@ public static class DependencyInjection
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
-        
-        // Register the database context as the IApplicationDbContext interface
-        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+          // Register repositories and unit of work
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         
         return services;
     }

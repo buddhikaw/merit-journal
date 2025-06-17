@@ -1,8 +1,8 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using MeritJournal.Application.DTOs;
 using MeritJournal.Application.Interfaces;
 using MeritJournal.Domain.Entities;
+using System.Linq;
 
 namespace MeritJournal.Application.Features.JournalEntries.Commands;
 
@@ -52,15 +52,15 @@ public class UpdateJournalEntryCommand : IRequest<JournalEntryDto>
 /// </summary>
 public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEntryCommand, JournalEntryDto>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateJournalEntryCommandHandler"/> class.
     /// </summary>
-    /// <param name="context">The application DB context.</param>
-    public UpdateJournalEntryCommandHandler(IApplicationDbContext context)
+    /// <param name="unitOfWork">The unit of work.</param>
+    public UpdateJournalEntryCommandHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
     
     /// <summary>
@@ -71,31 +71,49 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
     /// <returns>The updated journal entry as a DTO.</returns>
     public async Task<JournalEntryDto> Handle(UpdateJournalEntryCommand request, CancellationToken cancellationToken)
     {
-        // Get the existing journal entry
-        var journalEntry = await _context.JournalEntries
-            .Include(je => je.JournalEntryTags)
-            .ThenInclude(jet => jet.Tag)
-            .Include(je => je.Images)
-            .FirstOrDefaultAsync(je => je.Id == request.Id && je.UserId == request.UserId, cancellationToken);
+        // Begin transaction
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
         
-        if (journalEntry == null)
+        try
+        {
+            // Get the existing journal entry
+            var journalEntry = await _unitOfWork.JournalEntries
+                .FirstOrDefaultAsync(je => je.Id == request.Id && je.UserId == request.UserId);
+          if (journalEntry == null)
         {
             throw new KeyNotFoundException($"Journal entry with ID {request.Id} not found for user {request.UserId}");
         }
         
+        // Get all related data
+        var journalEntryTags = _unitOfWork.JournalEntryTags
+            .Find(jet => jet.JournalEntryId == journalEntry.Id)
+            .ToList();
+            
+        var images = _unitOfWork.JournalImages
+            .Find(img => img.JournalEntryId == journalEntry.Id)
+            .ToList();
+            
         // Update the basic properties
         journalEntry.Title = request.Title;
         journalEntry.Content = request.Content;
         journalEntry.EntryDate = DateTime.SpecifyKind(request.EntryDate.Date, DateTimeKind.Utc);
         journalEntry.ModifiedAt = DateTime.UtcNow;
-          // Process tags if provided
+        journalEntry.JournalEntryTags = journalEntryTags;
+        journalEntry.Images = images;
+        
+        // Process tags if provided
         if (request.Tags != null && request.Tags.Any())
         {
             // Remove existing tags
-            _context.JournalEntryTags.RemoveRange(journalEntry.JournalEntryTags);
+            foreach (var tag in journalEntryTags.ToList())
+            {
+                _unitOfWork.JournalEntryTags.Remove(tag);
+            }
             journalEntry.JournalEntryTags.Clear();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             
-            // Add the new tags            // Process only non-empty tags
+            // Add the new tags
+            // Process only non-empty tags
             var uniqueTagNames = request.Tags
                 .Where(tag => !string.IsNullOrWhiteSpace(tag))
                 .Select(tag => tag.Trim())
@@ -105,8 +123,8 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
             foreach (var tagName in uniqueTagNames)
             {
                 // Check if the tag already exists for this user
-                var tag = await _context.Tags
-                    .FirstOrDefaultAsync(t => t.Name == tagName && t.UserId == request.UserId, cancellationToken);
+                var tag = await _unitOfWork.Tags
+                    .FirstOrDefaultAsync(t => t.Name == tagName && t.UserId == request.UserId);
                 
                 if (tag == null)
                 {
@@ -116,28 +134,34 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
                         Name = tagName,
                         UserId = request.UserId
                     };
-                    _context.Tags.Add(tag);
+                    _unitOfWork.Tags.Add(tag);
                     
                     // Save changes to ensure the tag is created with an ID
-                    await _context.SaveChangesAsync(cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
                 
                 // Create journal entry tag relationship
-                journalEntry.JournalEntryTags.Add(new JournalEntryTag
+                var journalEntryTag = new JournalEntryTag
                 {
                     TagId = tag.Id,
                     JournalEntryId = journalEntry.Id
-                });
+                };
+                _unitOfWork.JournalEntryTags.Add(journalEntryTag);
+                journalEntry.JournalEntryTags.Add(journalEntryTag);
             }
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         else
         {
             // If no tags are provided, remove all existing tags
-            _context.JournalEntryTags.RemoveRange(journalEntry.JournalEntryTags);
+            foreach (var tag in journalEntryTags.ToList())
+            {
+                _unitOfWork.JournalEntryTags.Remove(tag);
+            }
             journalEntry.JournalEntryTags.Clear();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
-        
-        // Process images if provided
+          // Process images if provided
         if (request.Images != null && request.Images.Any())
         {
             // Remove images that are not in the update request
@@ -146,7 +170,7 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
             
             foreach (var image in imagesToRemove)
             {
-                _context.JournalImages.Remove(image);
+                _unitOfWork.JournalImages.Remove(image);
                 journalEntry.Images.Remove(image);
             }
             
@@ -154,7 +178,8 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
             foreach (var imageDto in request.Images)
             {
                 if (imageDto.Id > 0)
-                {                    // Update existing image
+                {
+                    // Update existing image
                     var existingImage = journalEntry.Images.FirstOrDefault(i => i.Id == imageDto.Id);
                     if (existingImage != null)
                     {
@@ -165,23 +190,48 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
                         }
                         existingImage.ContentType = imageDto.ContentType;
                         existingImage.Caption = imageDto.Caption;
+                        
+                        _unitOfWork.JournalImages.Update(existingImage);
                     }
                 }
                 else
-                {                    // Add new image
-                    journalEntry.Images.Add(new JournalImage
+                {
+                    // Add new image
+                    var newImage = new JournalImage
                     {
                         ImageData = Convert.FromBase64String(imageDto.ImageDataBase64),
                         ContentType = imageDto.ContentType,
-                        Caption = imageDto.Caption
-                    });
+                        Caption = imageDto.Caption,
+                        JournalEntryId = journalEntry.Id
+                    };
+                    _unitOfWork.JournalImages.Add(newImage);
+                    journalEntry.Images.Add(newImage);
                 }
             }
         }
         
+        // Update the journal entry
+        _unitOfWork.JournalEntries.Update(journalEntry);
+        
         // Save changes to the database
-        await _context.SaveChangesAsync(cancellationToken);
-          // Prepare DTO for response
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.CommitTransactionAsync(cancellationToken);
+        
+        // Refresh data for the DTO
+        var refreshedTags = _unitOfWork.JournalEntryTags
+            .Find(jet => jet.JournalEntryId == journalEntry.Id)
+            .ToList();
+            
+        var tagIds = refreshedTags.Select(t => t.TagId).ToList();
+        var tags = _unitOfWork.Tags
+            .Find(t => tagIds.Contains(t.Id))
+            .ToList();
+            
+        var refreshedImages = _unitOfWork.JournalImages
+            .Find(i => i.JournalEntryId == journalEntry.Id)
+            .ToList();
+        
+        // Prepare DTO for response
         var dto = new JournalEntryDto
         {
             Id = journalEntry.Id,
@@ -190,11 +240,15 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
             EntryDate = journalEntry.EntryDate,
             CreatedAt = journalEntry.CreatedAt,
             ModifiedAt = journalEntry.ModifiedAt,
-            Tags = journalEntry.JournalEntryTags
-                .Where(jet => jet.Tag != null)
-                .Select(jet => jet.Tag!.Name)
+            Tags = refreshedTags
+                .Join(
+                    tags,
+                    jet => jet.TagId,
+                    tag => tag.Id,
+                    (_, tag) => tag.Name
+                )
                 .ToList(),
-            Images = journalEntry.Images
+            Images = refreshedImages
                 .Select(i => new JournalImageDto
                 {
                     Id = i.Id,
@@ -207,5 +261,12 @@ public class UpdateJournalEntryCommandHandler : IRequestHandler<UpdateJournalEnt
         };
         
         return dto;
+        
+        }
+        catch (Exception)
+        {
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            throw;
+        }
     }
 }

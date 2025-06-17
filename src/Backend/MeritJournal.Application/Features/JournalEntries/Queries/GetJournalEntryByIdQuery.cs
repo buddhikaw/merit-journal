@@ -1,7 +1,7 @@
 using MediatR;
 using MeritJournal.Application.DTOs;
 using MeritJournal.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace MeritJournal.Application.Features.JournalEntries.Queries;
 
@@ -37,15 +37,15 @@ public class GetJournalEntryByIdQuery : IRequest<JournalEntryDto?>
 /// </summary>
 public class GetJournalEntryByIdQueryHandler : IRequestHandler<GetJournalEntryByIdQuery, JournalEntryDto?>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     
     /// <summary>
     /// Initializes a new instance of the <see cref="GetJournalEntryByIdQueryHandler"/> class.
     /// </summary>
-    /// <param name="context">The application DB context.</param>
-    public GetJournalEntryByIdQueryHandler(IApplicationDbContext context)
+    /// <param name="unitOfWork">The unit of work.</param>
+    public GetJournalEntryByIdQueryHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
     
     /// <summary>
@@ -56,17 +56,33 @@ public class GetJournalEntryByIdQueryHandler : IRequestHandler<GetJournalEntryBy
     /// <returns>The journal entry as a DTO, or null if not found.</returns>
     public async Task<JournalEntryDto?> Handle(GetJournalEntryByIdQuery request, CancellationToken cancellationToken)
     {
-        var journalEntry = await _context.JournalEntries
-            .Include(je => je.JournalEntryTags)
-            .ThenInclude(jet => jet.Tag)
-            .Include(je => je.Images)
-            .FirstOrDefaultAsync(je => je.Id == request.JournalEntryId && je.UserId == request.UserId, cancellationToken);
-        
-        if (journalEntry == null)
+        // Find the journal entry
+        var journalEntry = await _unitOfWork.JournalEntries
+            .FirstOrDefaultAsync(je => je.Id == request.JournalEntryId && je.UserId == request.UserId);
+          if (journalEntry == null)
         {
             return null;
         }
-      // Create the DTO from the entity
+        
+        // Load the related data
+        var journalEntryTags = _unitOfWork.JournalEntryTags
+            .Find(jet => jet.JournalEntryId == journalEntry.Id)
+            .ToList();
+        
+        // Get all tag IDs used in this journal entry
+        var tagIds = journalEntryTags.Select(jet => jet.TagId).ToList();
+        
+        // Load all tags for this journal entry
+        var tags = _unitOfWork.Tags
+            .Find(t => tagIds.Contains(t.Id))
+            .ToList();
+            
+        // Load all images for this journal entry
+        var images = _unitOfWork.JournalImages
+            .Find(img => img.JournalEntryId == journalEntry.Id)
+            .ToList();
+            
+        // Combine the data to create the journal entry DTO
         var dto = new JournalEntryDto
         {
             Id = journalEntry.Id,
@@ -75,16 +91,22 @@ public class GetJournalEntryByIdQueryHandler : IRequestHandler<GetJournalEntryBy
             EntryDate = journalEntry.EntryDate,
             CreatedAt = journalEntry.CreatedAt,
             ModifiedAt = journalEntry.ModifiedAt,
-            Tags = journalEntry.JournalEntryTags
-                .Where(jet => jet.Tag != null)
-                .Select(jet => new TagDto
-                {
-                    Id = jet.Tag!.Id,
-                    Name = jet.Tag!.Name
-                })
-                .Select(tag => tag.Name)
+            Tags = journalEntryTags
+                .Join(
+                    tags,
+                    jet => jet.TagId,
+                    tag => tag.Id,
+                    (jet, tag) => tag.Name
+                )
                 .ToList(),
-            Images = new List<JournalImageDto>() // We'll handle images separately if needed
+            Images = images.Select(image => new JournalImageDto
+                {
+                    Id = image.Id,
+                    ImageDataBase64 = Convert.ToBase64String(image.ImageData),
+                    ContentType = image.ContentType,
+                    Caption = image.Caption,
+                    JournalEntryId = image.JournalEntryId
+                }).ToList()
         };
         
         return dto;
