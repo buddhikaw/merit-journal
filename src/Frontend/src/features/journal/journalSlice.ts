@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { journalService } from '../../services/journalService';
-import { JournalEntry, JournalEntryDto, Tag } from '../../types/journal';
+import { JournalEntry, JournalEntryDto } from '../../types/journal';
 
 interface JournalState {
   entries: JournalEntry[];
@@ -92,16 +92,15 @@ export const journalSlice = createSlice({
       .addCase(fetchJournalEntries.pending, (state) => {
         state.loading = true;
         state.error = null;
-      })
-      .addCase(fetchJournalEntries.fulfilled, (state, action: PayloadAction<JournalEntry[]>) => {
+      })      .addCase(fetchJournalEntries.fulfilled, (state, action: PayloadAction<JournalEntry[]>) => {
         state.loading = false;
         state.entries = action.payload;
         
         // Extract unique tags from entries
         const tagSet = new Set<string>();
         action.payload.forEach(entry => {
-          // Handle Tag objects with IDs and names
-          entry.tags?.forEach((tag: Tag) => tagSet.add(tag.name));
+          // Tags are already strings, so add them directly
+          entry.tags?.forEach(tag => tagSet.add(tag));
         });
         state.tags = Array.from(tagSet);
       })
@@ -128,15 +127,14 @@ export const journalSlice = createSlice({
       .addCase(createJournalEntry.pending, (state) => {
         state.loading = true;
         state.error = null;
-      })
-      .addCase(createJournalEntry.fulfilled, (state, action: PayloadAction<JournalEntry>) => {
+      })      .addCase(createJournalEntry.fulfilled, (state, action: PayloadAction<JournalEntry>) => {
         state.loading = false;
         state.entries = [...state.entries, action.payload];
         
         // Add new tags
         if (action.payload.tags) {
-          const tagNames = action.payload.tags.map((tag: Tag) => tag.name);
-          const newTags = tagNames.filter((tagName: string) => !state.tags.includes(tagName));
+          // Tags are already strings so use them directly
+          const newTags = action.payload.tags.filter(tag => !state.tags.includes(tag));
           if (newTags.length > 0) {
             state.tags = [...state.tags, ...newTags];
           }
@@ -160,11 +158,11 @@ export const journalSlice = createSlice({
         if (state.currentEntry?.id === action.payload.id) {
           state.currentEntry = action.payload;
         }
-        
-        // Update tags
+          // Update tags
         if (action.payload.tags) {
           const tagSet = new Set<string>(state.tags);
-          action.payload.tags.forEach((tag: Tag) => tagSet.add(tag.name));
+          // Tags are already strings, so add them directly
+          action.payload.tags.forEach(tag => tagSet.add(tag));
           state.tags = Array.from(tagSet);
         }
       })
