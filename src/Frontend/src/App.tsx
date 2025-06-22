@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from './features/auth/authSlice';
+import authService from './services/authService';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -13,6 +14,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import TestPage from './pages/TestPage';
 import DebugIndexPage from './pages/DebugIndexPage';
 import BasicPage from './pages/BasicPage';
+import AuthCallback from './pages/AuthCallback';
+import SilentRenew from './pages/SilentRenew';
 
 // Components
 import Layout from './components/Layout';
@@ -23,8 +26,8 @@ import LayoutDebugger from './components/LayoutDebugger';
 import SimpleDebug from './components/SimpleDebug';
 import StandaloneDebug from './components/StandaloneDebug';
 
-// TEMPORARY: Development mode flag to bypass authentication
-const BYPASS_AUTH = true;
+// Authentication is now enabled
+const BYPASS_AUTH = false;
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -38,7 +41,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function App() {  return (
+function App() {
+  // Initialize authentication
+  useEffect(() => {
+    authService.initializeAuth();
+  }, []);
+
+  return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/test" element={<TestPage />} />
@@ -47,8 +56,14 @@ function App() {  return (
       <Route path="/basic" element={<BasicPage />} />
       <Route path="/standalone-debug" element={<StandaloneDebug />} />
       <Route path="/api-test" element={<ApiTestComponent />} />
-      <Route path="/redux-debug" element={<ReduxDebugComponent />} />      <Route path="/layout-debug" element={<LayoutDebugger />} />
+      <Route path="/redux-debug" element={<ReduxDebugComponent />} />
+      <Route path="/layout-debug" element={<LayoutDebugger />} />
       <Route path="/debug-index" element={<DebugIndexPage />} />
+
+      {/* Auth Routes */}
+      <Route path="/authentication/callback" element={<AuthCallback />} />
+      <Route path="/authentication/silent-callback" element={<SilentRenew />} />
+      
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />

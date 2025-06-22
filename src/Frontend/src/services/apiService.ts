@@ -1,7 +1,11 @@
-import { selectAccessToken } from '../features/auth/authSlice';
+import { logout } from '../features/auth/authSlice';
+import authService from './authService';
 
-// TEMPORARY: Flag to indicate development mode where authentication can be bypassed
-const BYPASS_AUTH = true;
+// Authentication is now enabled
+const BYPASS_AUTH = false;
+
+// TODO: Implement token refresh mechanism to handle token expiration more gracefully
+// Currently, expired tokens will just cause a logout and redirect to login page
 
 // Will be set when store is created (to avoid circular dependency)
 let storeRef: any = null;
@@ -14,7 +18,7 @@ export const setStoreRef = (store: any) => {
 /**
  * Base API URL for all requests
  */
-const API_BASE_URL = 'https://localhost:5001/api'; // Local development URL (HTTPS)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:5001/api';
 
 /**
  * Options for API requests
@@ -35,9 +39,16 @@ export const apiService = {
    * @param options - Request options
    * @returns The response data
    */  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    // Only get token if not bypassing auth and store is available
-    const accessToken = BYPASS_AUTH ? null : 
-      (storeRef ? selectAccessToken(storeRef.getState()) : null);
+    let accessToken = null;
+    
+    // Only get token if not bypassing auth
+    if (!BYPASS_AUTH) {
+      // Get the current user from auth service
+      const user = await authService.getUser();
+      if (user && !user.expired) {
+        accessToken = user.access_token;
+      }
+    }
     
     const url = `${API_BASE_URL}${endpoint}`;
     const headers: Record<string, string> = {
@@ -59,12 +70,24 @@ export const apiService = {
     // Add body if provided
     if (options.body) {
       requestOptions.body = JSON.stringify(options.body);
-    }
-
-    try {
+    }    try {
       const response = await fetch(url, requestOptions);
       
       if (!response.ok) {
+        // Handle 401 Unauthorized - logout the user
+        if (response.status === 401 && !BYPASS_AUTH && storeRef) {
+          // Clear any stored tokens
+          localStorage.removeItem('accessToken');
+          
+          // Dispatch logout action to Redux
+          storeRef.dispatch(logout());
+          
+          // Redirect to login page
+          window.location.href = '/login';
+          
+          throw new Error('Session expired. Please login again.');
+        }
+        
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.message || `API request failed with status ${response.status}`

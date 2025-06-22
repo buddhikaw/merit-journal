@@ -38,13 +38,14 @@ export const authSlice = createSlice({
       state.accessToken = null;
       state.loading = false;
       state.error = action.payload;
-    },
-    logout: (state) => {
+    },    logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
       state.accessToken = null;
       state.loading = false;
       state.error = null;
+      // Also clear localStorage to ensure all auth data is removed
+      localStorage.removeItem('accessToken');
     },
   },
 });

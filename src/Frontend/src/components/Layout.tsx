@@ -24,8 +24,8 @@ import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
 import { logout, selectIsAuthenticated, selectUser } from '../features/auth/authSlice';
 
-// TEMPORARY: Flag to bypass authentication
-const BYPASS_AUTH = true;
+// Authentication is now enabled
+const BYPASS_AUTH = false;
 
 const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -118,15 +118,14 @@ const Layout: React.FC = () => {
             Merit Journal
           </Typography>
           {showContent && (
-            <>
-              {isAuthenticated ? (
+            <>              {isAuthenticated ? (
                 <Button color="inherit" onClick={handleLogout}>
                   Logout
                 </Button>
               ) : (
-                <Typography variant="body1">
-                  Development Mode (Auth Bypassed)
-                </Typography>
+                <Button color="inherit" onClick={() => navigate('/login')}>
+                  Login
+                </Button>
               )}
             </>
           )}

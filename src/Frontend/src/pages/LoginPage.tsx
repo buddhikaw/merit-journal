@@ -12,45 +12,28 @@ import {
   CircularProgress,
 } from '@mui/material';
 import GoogleIcon from '@mui/icons-material/Google';
-import MicrosoftIcon from '@mui/icons-material/Window';
-import { loginStart, loginSuccess, loginFailure } from '../features/auth/authSlice';
-// For now, we'll mock the OIDC login since we're focusing on the API integration
+import { loginFailure } from '../features/auth/authSlice';
+import authService from '../services/authService';
 
 const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (provider: 'google' | 'microsoft') => {
+  const handleLogin = async () => {
     setLoading(true);
-    dispatch(loginStart());
     
     try {
-      // For development/testing purposes only - this is a mock of the OIDC login flow
-      // In a real app, this would redirect to the OIDC provider
+      // Use authService to handle login
+      await authService.login();
       
-      // Mock successful login after a short delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a mock user object
-      const mockUser = {
-        access_token: 'mock_token_' + Math.random().toString(36).substr(2, 9),
-        id_token: 'mock_id_token',
-        profile: {
-          sub: 'user_' + Math.random().toString(36).substr(2, 9),
-          name: 'Test User',
-          email: 'testuser@example.com',
-        },
-      };
-      
-      // Store the token in localStorage for the API service to use
-      localStorage.setItem('accessToken', mockUser.access_token);
-      
-      dispatch(loginSuccess(mockUser));
-      navigate('/');
+      // Navigation will happen in the callback or directly in the authService if mock auth is used
+      // Set timeout to simulate loading for mock auth
+      setTimeout(() => {
+        navigate('/');
+        setLoading(false);
+      }, 1500);
     } catch (error) {
       dispatch(loginFailure((error as Error).message));
-    } finally {
       setLoading(false);
     }
   };
@@ -75,25 +58,21 @@ const LoginPage: React.FC = () => {
               Please sign in using one of the following providers:
             </Typography>
           </CardContent>
-          <CardActions sx={{ padding: 2, flexDirection: 'column', gap: 1 }}>
-            <Button
+          <CardActions sx={{ padding: 2, flexDirection: 'column', gap: 1 }}>            <Button
               fullWidth
-              variant="outlined"
+              variant="contained"
+              color="primary"
               startIcon={<GoogleIcon />}
-              onClick={() => handleLogin('google')}
+              onClick={() => handleLogin()}
               disabled={loading}
+              sx={{
+                bgcolor: '#4285F4',
+                '&:hover': {
+                  bgcolor: '#357ae8'
+                }
+              }}
             >
               Sign in with Google
-            </Button>
-            
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<MicrosoftIcon />}
-              onClick={() => handleLogin('microsoft')}
-              disabled={loading}
-            >
-              Sign in with Microsoft
             </Button>
             
             {loading && (
